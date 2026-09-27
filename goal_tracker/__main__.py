@@ -1,4 +1,5 @@
-from goal_tracker.agent_shell import launch_agent_shell
+import sys
+from goal_tracker.cli import main
 
 if __name__ == "__main__":
-    launch_agent_shell()
+    main()
