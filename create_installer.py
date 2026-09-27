@@ -74,7 +74,14 @@ $userChoice = Read-Host "Trusted directory path"
 
 $targetDir = $defaultPath
 if (![string]::IsNullOrWhiteSpace($userChoice)) {{
-    $targetDir = [System.IO.Path]::GetFullPath($userChoice.Trim('"'))
+    $cleanChoice = $userChoice.Trim().Trim('"').Trim("'")
+    $rawPath = [System.IO.Path]::GetFullPath($cleanChoice)
+    $leafName = Split-Path $rawPath -Leaf
+    if ($leafName -notmatch "^(?i)tracks?$") {{
+        $targetDir = Join-Path $rawPath "tracks"
+    }} else {{
+        $targetDir = $rawPath
+    }}
 }}
 
 Write-Host "`n[*] Installing TrackS into: $targetDir" -ForegroundColor White
@@ -103,7 +110,12 @@ Remove-Item $zipTemp -Force
 # 4. Install Dependencies
 Write-Host "[*] Configuring Python dependencies (rich, pydantic)..." -ForegroundColor White
 & $pythonCmd -m pip install -q --no-warn-script-location rich pydantic
-& $pythonCmd -m pip install -q --no-warn-script-location -e $targetDir
+
+try {{
+    & $pythonCmd -m pip install -q --no-warn-script-location -e $targetDir 2>`$null
+}} catch {{
+    # Standalone launchers in bin/ manage PYTHONPATH directly
+}}
 
 # 5. Create Standalone Launchers
 $tracksCmd = Join-Path $binDir "tracks.cmd"
@@ -185,7 +197,13 @@ DEFAULT_PATH="$HOME/.tracks"
 echo ""
 echo -e "\\033[1;36mWhere would you like to install TrackS?\\033[0m"
 read -p "Trusted directory path [Default: $DEFAULT_PATH]: " USER_CHOICE
-TARGET_DIR="${{USER_CHOICE:-$DEFAULT_PATH}}"
+RAW_PATH="${{USER_CHOICE:-$DEFAULT_PATH}}"
+BASE_NAME=$(basename "$RAW_PATH")
+if [[ "$BASE_NAME" =~ ^[Tt]racks?$ ]]; then
+    TARGET_DIR="$RAW_PATH"
+else
+    TARGET_DIR="$RAW_PATH/tracks"
+fi
 
 echo -e "\\033[0;37m[*] Installing TrackS into: $TARGET_DIR\\033[0m"
 mkdir -p "$TARGET_DIR/bin"
@@ -198,14 +216,16 @@ rm -f "$TMP_ZIP"
 
 # 4. Install Dependencies
 echo -e "\\033[0;37m[*] Installing dependencies (rich, pydantic)...\\033[0m"
-$PYTHON_CMD -m pip install -q --user rich pydantic
-$PYTHON_CMD -m pip install -q --user -e "$TARGET_DIR"
+$PYTHON_CMD -m pip install -q --user rich pydantic 2>/dev/null || $PYTHON_CMD -m pip install -q rich pydantic
+$PYTHON_CMD -m pip install -q --user -e "$TARGET_DIR" 2>/dev/null || true
 
 # 5. Create launcher
 LAUNCHER="$TARGET_DIR/bin/tracks"
-cat << EOF > "$LAUNCHER"
+cat << 'EOF' > "$LAUNCHER"
 #!/usr/bin/env bash
-exec $PYTHON_CMD -m goal_tracker "\\$@"
+DIR="$(cd "$(dirname "${{BASH_SOURCE[0]}}")" && pwd)"
+export PYTHONPATH="$DIR/..:$PYTHONPATH"
+exec python3 -m goal_tracker "$@"
 EOF
 chmod +x "$LAUNCHER"
 ln -sf "$LAUNCHER" "$TARGET_DIR/bin/TrackS"

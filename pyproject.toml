@@ -14,7 +14,11 @@ dependencies = [
 ]
 
 [project.scripts]
-tracks = "goal_tracker.agent_shell:launch_agent_shell"
-TrackS = "goal_tracker.agent_shell:launch_agent_shell"
-goaltrack = "goal_tracker.agent_shell:launch_agent_shell"
-sentinel = "goal_tracker.agent_shell:launch_agent_shell"
+tracks = "goal_tracker.cli:main"
+TrackS = "goal_tracker.cli:main"
+goaltrack = "goal_tracker.cli:main"
+sentinel = "goal_tracker.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["goal_tracker*"]
