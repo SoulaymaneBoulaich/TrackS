@@ -34,17 +34,17 @@ def create_payload():
 def generate_install_ps1(b64_payload):
     ps1_content = f'''<#
 .SYNOPSIS
-    Sentinel-X Global Autonomous AI Goal & Penalty Tracker Installer
+    TrackS Global Autonomous AI Goal & Penalty Tracker Installer
 .DESCRIPTION
-    One-line automated installer for Windows PowerShell.
-    Downloads, extracts to trusted user-selected folder, configures PATH, and launches Sentinel-X.
+    One-line automated installer for Windows PowerShell & Command Prompt.
+    Downloads, extracts to trusted user-selected folder, configures PATH, and launches TrackS.
 #>
 
 $ErrorActionPreference = "Stop"
 
 Write-Host @"
 ====================================================================
-       SENTINEL-X: AUTONOMOUS AI ACCOUNTABILITY INSTALLER           
+          TrackS: AUTONOMOUS AI ACCOUNTABILITY INSTALLER           
 ====================================================================
 "@ -ForegroundColor Cyan
 
@@ -66,9 +66,9 @@ $pyVersion = & $pythonCmd --version 2>&1
 Write-Host "[OK] Found $pyVersion" -ForegroundColor Green
 
 # 2. Prompt user for trusted destination directory
-$defaultPath = Join-Path $HOME ".sentinel-x"
+$defaultPath = Join-Path $HOME ".tracks"
 Write-Host ""
-Write-Host "Where would you like to install Sentinel-X?" -ForegroundColor Cyan
+Write-Host "Where would you like to install TrackS?" -ForegroundColor Cyan
 Write-Host "Press [Enter] to use default: $defaultPath" -ForegroundColor Gray
 $userChoice = Read-Host "Trusted directory path"
 
@@ -77,7 +77,7 @@ if (![string]::IsNullOrWhiteSpace($userChoice)) {{
     $targetDir = [System.IO.Path]::GetFullPath($userChoice.Trim('"'))
 }}
 
-Write-Host "`n[*] Installing Sentinel-X into: $targetDir" -ForegroundColor White
+Write-Host "`n[*] Installing TrackS into: $targetDir" -ForegroundColor White
 if (!(Test-Path $targetDir)) {{
     New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
 }}
@@ -94,7 +94,7 @@ $b64Payload = @"
 "@
 
 $zipBytes = [System.Convert]::FromBase64String($b64Payload)
-$zipTemp = Join-Path $env:TEMP "sentinel_install_$(Get-Random).zip"
+$zipTemp = Join-Path $env:TEMP "tracks_install_$(Get-Random).zip"
 [System.IO.File]::WriteAllBytes($zipTemp, $zipBytes)
 
 Expand-Archive -Path $zipTemp -DestinationPath $targetDir -Force
@@ -106,9 +106,11 @@ Write-Host "[*] Configuring Python dependencies (rich, pydantic)..." -Foreground
 & $pythonCmd -m pip install -q --no-warn-script-location -e $targetDir
 
 # 5. Create Standalone Launchers
+$tracksCmd = Join-Path $binDir "tracks.cmd"
+$tracksCapCmd = Join-Path $binDir "TrackS.cmd"
 $sentinelCmd = Join-Path $binDir "sentinel.cmd"
 $goaltrackCmd = Join-Path $binDir "goaltrack.cmd"
-$ps1Launcher = Join-Path $binDir "sentinel.ps1"
+$ps1Launcher = Join-Path $binDir "tracks.ps1"
 
 $cmdScript = @"
 @echo off
@@ -119,12 +121,14 @@ $ps1Script = @"
 & "$pythonCmd" -m goal_tracker `$args
 "@
 
+[System.IO.File]::WriteAllText($tracksCmd, $cmdScript)
+[System.IO.File]::WriteAllText($tracksCapCmd, $cmdScript)
 [System.IO.File]::WriteAllText($sentinelCmd, $cmdScript)
 [System.IO.File]::WriteAllText($goaltrackCmd, $cmdScript)
 [System.IO.File]::WriteAllText($ps1Launcher, $ps1Script)
 
 # 6. Permanently Add to User PATH
-Write-Host "[*] Registering 'sentinel' into your system environment PATH..." -ForegroundColor White
+Write-Host "[*] Registering 'tracks' into your system environment PATH..." -ForegroundColor White
 $currentUserPath = [Environment]::GetEnvironmentVariable("PATH", "User")
 if ($currentUserPath -notlike "*$binDir*") {{
     $newPath = if ([string]::IsNullOrEmpty($currentUserPath)) {{ $binDir }} else {{ "$currentUserPath;$binDir" }}
@@ -140,17 +144,17 @@ if ($env:PATH -notlike "*$binDir*") {{
 Write-Host @"
 
 ====================================================================
-   [SUCCESS] INSTALLATION COMPLETE! SENTINEL-X IS GLOBALLY READY.
+     [SUCCESS] INSTALLATION COMPLETE! TrackS IS GLOBALLY READY.
 ====================================================================
-You can now open ANY PowerShell or Command Prompt window and type:
+You can now open ANY PowerShell or Command Prompt (cmd) window and type:
 
-    sentinel      (or goaltrack)
+    tracks        (or TrackS)
 
-Starting Sentinel-X now...
+Starting TrackS now...
 "@ -ForegroundColor Green
 
 Start-Sleep -Seconds 1
-& $sentinelCmd
+& $tracksCmd
 '''
     return ps1_content
 
@@ -159,7 +163,7 @@ def generate_install_sh(b64_payload):
 set -e
 
 echo -e "\\033[1;36m====================================================================\\033[0m"
-echo -e "\\033[1;33m       SENTINEL-X: AUTONOMOUS AI ACCOUNTABILITY INSTALLER           \\033[0m"
+echo -e "\\033[1;33m          TrackS: AUTONOMOUS AI ACCOUNTABILITY INSTALLER           \\033[0m"
 echo -e "\\033[1;36m====================================================================\\033[0m"
 
 # 1. Check Python
@@ -175,17 +179,17 @@ fi
 echo -e "\\033[0;32m[OK] Found $($PYTHON_CMD --version)\\033[0m"
 
 # 2. Destination directory prompt
-DEFAULT_PATH="$HOME/.sentinel-x"
+DEFAULT_PATH="$HOME/.tracks"
 echo ""
-echo -e "\\033[1;36mWhere would you like to install Sentinel-X?\\033[0m"
+echo -e "\\033[1;36mWhere would you like to install TrackS?\\033[0m"
 read -p "Trusted directory path [Default: $DEFAULT_PATH]: " USER_CHOICE
 TARGET_DIR="${{USER_CHOICE:-$DEFAULT_PATH}}"
 
-echo -e "\\033[0;37m[*] Installing Sentinel-X into: $TARGET_DIR\\033[0m"
+echo -e "\\033[0;37m[*] Installing TrackS into: $TARGET_DIR\\033[0m"
 mkdir -p "$TARGET_DIR/bin"
 
 # 3. Extract Payload
-TMP_ZIP="/tmp/sentinel_install_$RANDOM.zip"
+TMP_ZIP="/tmp/tracks_install_$RANDOM.zip"
 echo "{b64_payload}" | base64 -d > "$TMP_ZIP"
 unzip -q -o "$TMP_ZIP" -d "$TARGET_DIR"
 rm -f "$TMP_ZIP"
@@ -196,25 +200,27 @@ $PYTHON_CMD -m pip install -q --user rich pydantic
 $PYTHON_CMD -m pip install -q --user -e "$TARGET_DIR"
 
 # 5. Create launcher
-LAUNCHER="$TARGET_DIR/bin/sentinel"
+LAUNCHER="$TARGET_DIR/bin/tracks"
 cat << EOF > "$LAUNCHER"
 #!/usr/bin/env bash
 exec $PYTHON_CMD -m goal_tracker "\\$@"
 EOF
 chmod +x "$LAUNCHER"
+ln -sf "$LAUNCHER" "$TARGET_DIR/bin/TrackS"
+ln -sf "$LAUNCHER" "$TARGET_DIR/bin/sentinel"
 ln -sf "$LAUNCHER" "$TARGET_DIR/bin/goaltrack"
 
 # 6. Add to PATH in shell profile
 LOCAL_BIN="$HOME/.local/bin"
 if [ -d "$LOCAL_BIN" ]; then
-    ln -sf "$LAUNCHER" "$LOCAL_BIN/sentinel"
-    ln -sf "$LAUNCHER" "$LOCAL_BIN/goaltrack"
+    ln -sf "$LAUNCHER" "$LOCAL_BIN/tracks"
+    ln -sf "$LAUNCHER" "$LOCAL_BIN/TrackS"
 fi
 
 echo -e "\\033[1;32m====================================================================\\033[0m"
-echo -e "\\033[1;32m   [SUCCESS] INSTALLATION COMPLETE! SENTINEL-X IS GLOBALLY READY.\\033[0m"
+echo -e "\\033[1;32m     [SUCCESS] INSTALLATION COMPLETE! TrackS IS GLOBALLY READY.   \\033[0m"
 echo -e "\\033[1;32m====================================================================\\033[0m"
-echo -e "You can now run: \\033[1;33msentinel\\033[0m from any terminal."
+echo -e "You can now run: \\033[1;33mtracks\\033[0m from any terminal."
 echo ""
 exec "$LAUNCHER"
 '''

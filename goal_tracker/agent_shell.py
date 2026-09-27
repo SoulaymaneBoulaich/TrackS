@@ -43,16 +43,16 @@ class GoalAgentShell:
                 "Accountability bankruptcy active. Clear your penances immediately."
             )
         elif profile.strikes == 2:
-            avatar = "⚠️ [bold yellow][SENTINEL-X: CODE ORANGE][/bold yellow]"
+            avatar = "⚠️ [bold yellow][TrackS: CODE ORANGE][/bold yellow]"
             comment = (
                 "You are one missed goal away from Strike 3. "
                 "Every excuse will be scrutinized without mercy."
             )
         elif profile.strikes == 1:
-            avatar = "👁️ [bold cyan][SENTINEL-X: WATCHFUL EYE][/bold cyan]"
+            avatar = "👁️ [bold cyan][TrackS: WATCHFUL EYE][/bold cyan]"
             comment = "1 strike recorded. Redemption is possible, but complacency will cost you."
         else:
-            avatar = "🛡️ [bold green][SENTINEL-X: DISCIPLINE ARBITER][/bold green]"
+            avatar = "🛡️ [bold green][TrackS: DISCIPLINE ARBITER][/bold green]"
             comment = (
                 "System clean. Zero strikes. Keep your standards high and your evidence airtight."
             )
@@ -249,7 +249,7 @@ class GoalAgentShell:
             console.print(f"[red]Goal #{goal_id} not found.[/red]")
             return
 
-        console.print(f"\n[dim cyan]⚖️ INITIATING SENTINEL-X CROSS-EXAMINATION FOR '{goal.title}'...[/dim cyan]")
+        console.print(f"\n[dim cyan]⚖️ INITIATING TrackS CROSS-EXAMINATION FOR '{goal.title}'...[/dim cyan]")
         decision = self.judge.execute_audit(goal_id)
 
         if decision.passed:
@@ -349,7 +349,7 @@ class GoalAgentShell:
         suggestions.append("💡 Pass Requirement: AI Judge requires numbers (e.g., 20 chapters, 50km), dates, and verifiable links to pass the 70-point threshold.")
 
         coaching_panel = (
-            f"[bold yellow]SENTINEL-X COACHING FEEDBACK:[/bold yellow]\n\n"
+            f"[bold yellow]TrackS COACHING FEEDBACK:[/bold yellow]\n\n"
             + "\n".join(suggestions) + "\n\n"
             f"[bold green]Recommended Criteria Format:[/bold green]\n"
             f"\"Deliver [Specific Artifact] verified via [Link/Log/File] with [Exact Metric] by [Date]\""
@@ -369,7 +369,7 @@ class GoalAgentShell:
     def run(self):
         console.clear()
         console.print("[bold cyan]════════════════════════════════════════════════════════════════════[/bold cyan]")
-        console.print("[bold yellow]       SENTINEL-X: AUTONOMOUS AI GOAL & PENALTY TRACKER          [/bold yellow]")
+        console.print("[bold yellow]          TrackS: AUTONOMOUS AI GOAL & PENALTY ENGINE             [/bold yellow]")
         console.print("[bold cyan]════════════════════════════════════════════════════════════════════[/bold cyan]\n")
 
         self.show_dashboard()
@@ -377,10 +377,10 @@ class GoalAgentShell:
         try:
             while True:
                 self.show_menu()
-                cmd = Prompt.ask("\n[bold cyan][SENTINEL-X][/bold cyan] [bold white]Select action[/bold white]").strip().lower()
+                cmd = Prompt.ask("\n[bold cyan][TrackS][/bold cyan] [bold white]Select action[/bold white]").strip().lower()
 
                 if cmd in ["0", "exit", "quit", "q"]:
-                    console.print("\n[bold yellow]Exiting Sentinel-X. Stay disciplined.[/bold yellow]\n")
+                    console.print("\n[bold yellow]Exiting TrackS. Stay disciplined.[/bold yellow]\n")
                     break
                 elif cmd in ["1", "dashboard", "status"]:
                     console.clear()

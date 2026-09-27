@@ -1,8 +1,8 @@
-# 🎯 GoalTracker: Ruthless AI Monthly Accountability & Penalty Engine
+# 🎯 TrackS: Autonomous AI Goal & Penalty Engine
 
 An automated accountability tracking system designed and engineered by the 40-agent swarm (`@product-manager`, `@backend-architect`, `@prompt-engineer`, `@qa-testing`).
 
-GoalTracker ensures you do not just write monthly goals—it verifies completion through an **AI Evidence Audit Engine**, awards XP for substantiated achievements, and **ruthlessly penalizes failures** with XP loss, 3-strike escalation, psychological AI roasts, and mandatory penance tasks.
+TrackS ensures you do not just write monthly goals—it verifies completion through an **AI Evidence Audit Engine**, awards XP for substantiated achievements, and **ruthlessly penalizes failures** with XP loss, 3-strike escalation, psychological AI roasts, and mandatory penance tasks.
 
 ---
 
@@ -25,30 +25,42 @@ GoalTracker ensures you do not just write monthly goals—it verifies completion
         └───────────────────► [ SQLite Ledger & Monthly Daemon ]
 ```
 
+---
+
 ## 🌐 Universal One-Line Global Installer
 
-Users do not need to download or clone `.py` files manually. They can simply run:
+Users do not need to download or clone `.py` files manually. Copy and paste the one-line command for your terminal:
 
-### Windows (PowerShell):
+### 🪟 Windows (Command Prompt / CMD):
+```cmd
+powershell -c "irm https://raw.githubusercontent.com/SoulaymaneBoulaich/TrackS/main/install.ps1 | iex"
+```
+
+### ⚡ Windows (PowerShell):
 ```powershell
 irm https://raw.githubusercontent.com/SoulaymaneBoulaich/TrackS/main/install.ps1 | iex
 ```
-*(Or locally: `powershell -ExecutionPolicy Bypass -File .\install.ps1`)*
 
-### macOS / Linux:
+### 🍎 / 🐧 macOS & Linux (Bash):
 ```bash
 curl -fsSL https://raw.githubusercontent.com/SoulaymaneBoulaich/TrackS/main/install.sh | bash
 ```
 
 **What the installer does automatically:**
-1. Prompts you to choose your **trusted folder** (e.g. `C:\Users\Username\.sentinel-x` or custom path).
-2. Deploys the self-contained Sentinel-X engine and required dependencies.
-3. Automatically registers `sentinel` and `goaltrack` to your permanent system `PATH`.
-4. Immediately launches Sentinel-X in your current window!
+1. Prompts you to choose your **trusted folder** (e.g. `C:\Users\Username\.tracks` or custom path).
+2. Deploys the self-contained TrackS engine and required dependencies.
+3. Automatically registers `tracks` (and `TrackS`) to your permanent system `PATH`.
+4. Immediately launches TrackS in your current window!
 
 ---
 
-## 🚀 Interactive AI Agent Terminal Shell
+## 🚀 One-Word Launch Anywhere: `tracks`
+
+Once installed, simply type:
+```cmd
+tracks
+```
+*(or `TrackS`)* in ANY terminal window to launch your interactive dashboard.
 
 To launch the full interactive AI Agent shell with real-time dashboard and command menu:
 
