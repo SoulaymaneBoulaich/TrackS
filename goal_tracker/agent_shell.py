@@ -22,6 +22,22 @@ from goal_tracker.database import Database
 from goal_tracker.models import GoalStatus
 from goal_tracker.judge import GoalJudge
 from goal_tracker.scheduler import MonthlyScheduler
+from goal_tracker.theme import (
+    COLOR_PRIMARY,
+    COLOR_SECONDARY,
+    COLOR_SUCCESS,
+    COLOR_WARNING,
+    COLOR_DANGER,
+    COLOR_SLATE,
+    COLOR_DARK_SLATE,
+    COLOR_WHITE,
+    COLOR_MUTED,
+    BOX_STYLE,
+    BOX_HEAVY,
+    format_status_badge,
+    format_strike_gauge,
+    render_cycle_progress
+)
 
 console = Console(legacy_windows=False)
 
@@ -34,38 +50,47 @@ class GoalAgentShell:
 
     def print_agent_greeting(self):
         profile = self.db.get_profile()
-        uncleared = self.db.get_uncleared_penalties()
+        goals = self.db.get_goals_by_month(profile.current_month)
 
         if profile.strikes >= 3:
-            avatar = "🚨 [bold red][STRIKE 3 - SYSTEM LOCKDOWN][/bold red]"
+            avatar = f"[bold {COLOR_DANGER}][SYSTEM STATUS: CODE RED - DISCIPLINE BANKRUPTCY][/bold {COLOR_DANGER}]"
             comment = (
-                "You have breached the discipline covenant with 3 strikes. "
-                "Accountability bankruptcy active. Clear your penances immediately."
+                "Discipline covenant breached with 3 strikes. "
+                "Accountability freeze active. Clear all outstanding penances immediately."
             )
         elif profile.strikes == 2:
-            avatar = "⚠️ [bold yellow][TrackS: CODE ORANGE][/bold yellow]"
+            avatar = f"[bold {COLOR_WARNING}][SYSTEM STATUS: CODE ORANGE - MAXIMUM SCRUTINY][/bold {COLOR_WARNING}]"
             comment = (
-                "You are one missed goal away from Strike 3. "
-                "Every excuse will be scrutinized without mercy."
+                "One missed milestone from terminal lockout. "
+                "Every justification will be cross-examined without leniency."
             )
         elif profile.strikes == 1:
-            avatar = "👁️ [bold cyan][TrackS: WATCHFUL EYE][/bold cyan]"
-            comment = "1 strike recorded. Redemption is possible, but complacency will cost you."
+            avatar = f"[bold {COLOR_PRIMARY}][SYSTEM STATUS: PROBATIONARY WATCH][/bold {COLOR_PRIMARY}]"
+            comment = "1 strike recorded. Milestone recovery required this cycle."
         else:
-            avatar = "🛡️ [bold green][TrackS: DISCIPLINE ARBITER][/bold green]"
-            comment = (
-                "System clean. Zero strikes. Keep your standards high and your evidence airtight."
-            )
+            avatar = f"[bold {COLOR_SUCCESS}][SYSTEM STATUS: NOMINAL - STANDARDS ENFORCED][/bold {COLOR_SUCCESS}]"
+            comment = "Cycle standing clean. Ensure all commitments are substantiated with objective proof."
 
-        greeting_panel = (
+        gauge = format_strike_gauge(profile.strikes, profile.max_strikes)
+        progress_bar = render_cycle_progress(profile.current_month, goals)
+
+        panel_content = (
             f"{avatar}\n"
-            f"[italic white]\"{comment}\"[/italic white]\n\n"
-            f"[dim]Commander: [bold cyan]{profile.username}[/bold cyan] | "
-            f"XP: [bold yellow]{profile.xp:,}[/bold yellow] | "
-            f"Level: [bold magenta]{profile.level}[/bold magenta] | "
-            f"Strikes: {'⚠️ ' * profile.strikes + '⚪ ' * (profile.max_strikes - profile.strikes)} ({profile.strikes}/3)[/dim]"
+            f"[{COLOR_SLATE}]\"{comment}\"[/{COLOR_SLATE}]\n\n"
+            f"[{COLOR_DARK_SLATE}]----------------------------------------------------------------------[/{COLOR_DARK_SLATE}]\n"
+            f"[bold {COLOR_WHITE}]OPERATOR:[/bold {COLOR_WHITE}] [bold {COLOR_PRIMARY}]{profile.username}[/bold {COLOR_PRIMARY}]  |  "
+            f"[bold {COLOR_WHITE}]XP:[/bold {COLOR_WHITE}] [bold {COLOR_WARNING}]{profile.xp:,}[/bold {COLOR_WARNING}]  |  "
+            f"[bold {COLOR_WHITE}]TIER:[/bold {COLOR_WHITE}] [bold {COLOR_SECONDARY}]LEVEL {profile.level}[/bold {COLOR_SECONDARY}]  |  "
+            f"[bold {COLOR_WHITE}]STRIKES:[/bold {COLOR_WHITE}] {gauge}\n"
+            f"[{COLOR_DARK_SLATE}]----------------------------------------------------------------------[/{COLOR_DARK_SLATE}]\n"
+            f"{progress_bar}"
         )
-        console.print(Panel(greeting_panel, border_style="cyan", box=box.ROUNDED))
+        console.print(Panel(
+            panel_content,
+            title=f"[bold {COLOR_PRIMARY}]TrackS :: ACCOUNTABILITY ENGINE [v1.0.0][/bold {COLOR_PRIMARY}]",
+            border_style=COLOR_DARK_SLATE,
+            box=BOX_STYLE
+        ))
 
     def show_dashboard(self):
         profile = self.db.get_profile()
@@ -77,36 +102,29 @@ class GoalAgentShell:
         # Goals Table
         if not goals:
             console.print(
-                f"\n[dim yellow]No active goals registered for {profile.current_month}. "
-                f"Type '2' or 'add' to commit to a goal.[/dim yellow]\n"
+                f"\n[{COLOR_MUTED}]No commitments recorded for active cycle {profile.current_month}. "
+                f"Enter '2' or 'add' to commit to a milestone.[/{COLOR_MUTED}]\n"
             )
         else:
             table = Table(
-                title=f"📋 Monthly Commitments ({profile.current_month})",
-                box=box.ROUNDED,
-                title_style="bold bold",
-                header_style="bold cyan"
+                title=f"COMMITMENTS LEDGER :: CYCLE {profile.current_month}",
+                box=BOX_STYLE,
+                border_style=COLOR_DARK_SLATE,
+                header_style=f"bold {COLOR_PRIMARY}",
+                title_style=f"bold {COLOR_WHITE}"
             )
-            table.add_column("ID", style="bold white", width=5, justify="center")
-            table.add_column("Goal Title", style="bold white", width=28)
-            table.add_column("Target Criteria", width=34)
-            table.add_column("Status", width=22, justify="center")
-            table.add_column("Evidence Summary", width=22)
+            table.add_column("ID", style=f"bold {COLOR_WHITE}", width=5, justify="center")
+            table.add_column("Goal Title", style=f"bold {COLOR_WHITE}", width=28)
+            table.add_column("Target Criteria", style=COLOR_SLATE, width=35)
+            table.add_column("Status", width=16, justify="center")
+            table.add_column("Submitted Proof", style=f"italic {COLOR_PRIMARY}", width=22)
 
             for g in goals:
-                if g.status == GoalStatus.VERIFIED_COMPLETED:
-                    status_str = "[bold green]VERIFIED ✓[/bold green]"
-                elif g.status == GoalStatus.EVIDENCE_SUBMITTED:
-                    status_str = "[bold cyan]EVIDENCE IN[/bold cyan]"
-                elif g.status == GoalStatus.FAILED_PENALIZED:
-                    status_str = "[bold red]FAILED & PENALIZED[/bold red]"
-                else:
-                    status_str = "[bold yellow]PENDING AUDIT[/bold yellow]"
-
+                status_str = format_status_badge(g.status)
                 ev_summary = (
                     (g.evidence[:18] + "...")
                     if g.evidence and len(g.evidence) > 20
-                    else (g.evidence or "[dim]None[/dim]")
+                    else (g.evidence or f"[{COLOR_MUTED}]None[/{COLOR_MUTED}]")
                 )
                 table.add_row(str(g.id), g.title, g.target_criteria, status_str, ev_summary)
 
@@ -114,273 +132,270 @@ class GoalAgentShell:
 
         # Uncleared Penances
         if uncleared_penalties:
-            console.print("\n[bold red]⚡ UNCLEARED PENANCE TASKS REQUIRING COMPLETION:[/bold red]")
+            console.print(f"\n[bold {COLOR_DANGER}][!] OUTSTANDING PENANCE OBLIGATIONS:[/bold {COLOR_DANGER}]")
             for p in uncleared_penalties:
                 pen_text = (
-                    f"[bold red]PENALTY #{p.id} FOR '{p.goal_title}' ({p.month})[/bold red]\n"
-                    f"[yellow]Lost:[/yellow] -{p.xp_lost} XP | [yellow]Strikes Added:[/yellow] +{p.strike_increment}\n\n"
-                    f"[bold white]Required Penance:[/bold white]\n"
-                    f"👉 [bold underline red]{p.penalty_task}[/bold underline red]\n\n"
-                    f"[dim]Run 'clear-penalty {p.id}' once you have performed this task.[/dim]"
+                    f"[bold {COLOR_DANGER}]PENALTY #{p.id} :: BREACH OF COMMITMENT '{p.goal_title}' ({p.month})[/bold {COLOR_DANGER}]\n"
+                    f"[{COLOR_WARNING}]Consequence:[/{COLOR_WARNING}] -{p.xp_lost} XP | Strikes Added: +{p.strike_increment}\n\n"
+                    f"[bold {COLOR_WHITE}]Assigned Penance Protocol:[/bold {COLOR_WHITE}]\n"
+                    f"  >> [bold underline {COLOR_WARNING}]{p.penalty_task}[/bold underline {COLOR_WARNING}]\n\n"
+                    f"[{COLOR_MUTED}]Execute the penance, then enter '7' or 'clear-penalty {p.id}' to confirm.[/{COLOR_MUTED}]"
                 )
-                console.print(Panel(pen_text, border_style="red", box=box.HEAVY))
+                console.print(Panel(pen_text, border_style=COLOR_DANGER, box=BOX_HEAVY))
 
     def show_menu(self):
         menu = (
-            "[bold cyan]AGENT COMMAND MENU:[/bold cyan]\n"
-            "  [bold green]1[/bold green]. [white]dashboard[/white]        - Refresh & view live status\n"
-            "  [bold green]2[/bold green]. [white]add[/white]              - Commit to a new monthly goal\n"
-            "  [bold green]3[/bold green]. [white]update[/white]           - Edit a goal title or criteria\n"
-            "  [bold green]4[/bold green]. [white]delete[/white]           - Remove a goal\n"
-            "  [bold green]5[/bold green]. [white]submit[/white]           - Submit proof/evidence for audit\n"
-            "  [bold green]6[/bold green]. [white]audit[/white]            - Trigger AI Judge cross-examination & verdict\n"
-            "  [bold green]7[/bold green]. [white]clear-penalty[/white]    - Mark completed penance task\n"
-            "  [bold green]8[/bold green]. [white]history[/white]          - View past penalty and audit logs\n"
-            "  [bold green]9[/bold green]. [white]remove-history[/white]   - Purge or remove penalty records\n"
-            "  [bold green]10[/bold green]. [white]advice[/white]          - AI Goal Feasibility & Criteria Coaching\n"
-            "  [bold green]11[/bold green]. [white]rollover[/white]        - Check calendar rollover & auto-audit past goals\n"
-            "  [bold red]0[/bold red]. [white]exit[/white]            - Quit Sentinel Agent\n"
+            f"[bold {COLOR_PRIMARY}]COMMAND MATRIX:[/bold {COLOR_PRIMARY}]\n"
+            f"  [bold {COLOR_PRIMARY}][ 1][/bold {COLOR_PRIMARY}] [bold {COLOR_WHITE}]dashboard[/bold {COLOR_WHITE}]      [{COLOR_MUTED}]-- Refresh active cycle status & progress[/{COLOR_MUTED}]\n"
+            f"  [bold {COLOR_PRIMARY}][ 2][/bold {COLOR_PRIMARY}] [bold {COLOR_WHITE}]add[/bold {COLOR_WHITE}]            [{COLOR_MUTED}]-- Register a new SMART commitment milestone[/{COLOR_MUTED}]\n"
+            f"  [bold {COLOR_PRIMARY}][ 3][/bold {COLOR_PRIMARY}] [bold {COLOR_WHITE}]update[/bold {COLOR_WHITE}]         [{COLOR_MUTED}]-- Modify goal title or verification criteria[/{COLOR_MUTED}]\n"
+            f"  [bold {COLOR_PRIMARY}][ 4][/bold {COLOR_PRIMARY}] [bold {COLOR_WHITE}]delete[/bold {COLOR_WHITE}]         [{COLOR_MUTED}]-- Remove an existing commitment record[/{COLOR_MUTED}]\n"
+            f"  [bold {COLOR_PRIMARY}][ 5][/bold {COLOR_PRIMARY}] [bold {COLOR_WHITE}]submit[/bold {COLOR_WHITE}]         [{COLOR_MUTED}]-- Submit artifacts, metrics, and proof links[/{COLOR_MUTED}]\n"
+            f"  [bold {COLOR_PRIMARY}][ 6][/bold {COLOR_PRIMARY}] [bold {COLOR_WHITE}]audit[/bold {COLOR_WHITE}]          [{COLOR_MUTED}]-- Run algorithmic evidence cross-examination[/{COLOR_MUTED}]\n"
+            f"  [bold {COLOR_PRIMARY}][ 7][/bold {COLOR_PRIMARY}] [bold {COLOR_WHITE}]clear-penalty[/bold {COLOR_WHITE}]  [{COLOR_MUTED}]-- Confirm completion of assigned penance[/{COLOR_MUTED}]\n"
+            f"  [bold {COLOR_PRIMARY}][ 8][/bold {COLOR_PRIMARY}] [bold {COLOR_WHITE}]history[/bold {COLOR_WHITE}]        [{COLOR_MUTED}]-- Review historical audit ledger & sanctions[/{COLOR_MUTED}]\n"
+            f"  [bold {COLOR_PRIMARY}][ 9][/bold {COLOR_PRIMARY}] [bold {COLOR_WHITE}]remove-history[/bold {COLOR_WHITE}] [{COLOR_MUTED}]-- Purge single or all historical penalty logs[/{COLOR_MUTED}]\n"
+            f"  [bold {COLOR_PRIMARY}][10][/bold {COLOR_PRIMARY}] [bold {COLOR_WHITE}]advice[/bold {COLOR_WHITE}]         [{COLOR_MUTED}]-- Optimize goal criteria prior to commitment[/{COLOR_MUTED}]\n"
+            f"  [bold {COLOR_PRIMARY}][11][/bold {COLOR_PRIMARY}] [bold {COLOR_WHITE}]rollover[/bold {COLOR_WHITE}]       [{COLOR_MUTED}]-- Trigger month-end rollover & auto-audit past-due goals[/{COLOR_MUTED}]\n"
+            f"  [bold {COLOR_DANGER}][ 0][/bold {COLOR_DANGER}] [bold {COLOR_WHITE}]exit[/bold {COLOR_WHITE}]           [{COLOR_MUTED}]-- Terminate active session[/{COLOR_MUTED}]"
         )
-        console.print(Panel(menu, border_style="dim", box=box.SIMPLE))
+        console.print(Panel(menu, border_style=COLOR_DARK_SLATE, box=BOX_STYLE))
 
     def action_add(self):
-        console.print("\n[bold cyan]─── COMMITTING TO A NEW GOAL ───[/bold cyan]")
-        title = Prompt.ask("[bold]Enter Goal Title[/bold]")
+        console.print(f"\n[bold {COLOR_PRIMARY}]--- COMMIT TO NEW MILESTONE ---[/bold {COLOR_PRIMARY}]")
+        title = Prompt.ask(f"[bold {COLOR_WHITE}]Goal Title[/bold {COLOR_WHITE}]")
         if not title.strip():
-            console.print("[red]Cancelled: Goal title cannot be empty.[/red]")
+            console.print(f"[{COLOR_DANGER}][!] Cancelled: Goal title cannot be empty.[/{COLOR_DANGER}]")
             return
 
-        criteria = Prompt.ask("[bold]Enter Verifiable SMART Criteria[/bold] (metrics, artifact URL, or quantitative threshold)")
+        criteria = Prompt.ask(f"[bold {COLOR_WHITE}]Quantifiable Criteria[/bold {COLOR_WHITE}] (Target metrics, repository link, or deliverables)")
         if not criteria.strip():
-            console.print("[red]Cancelled: SMART criteria required.[/red]")
+            console.print(f"[{COLOR_DANGER}][!] Cancelled: Verifiable criteria required.[/{COLOR_DANGER}]")
             return
 
         month = Prompt.ask(
-            "[bold]Target Month (YYYY-MM)[/bold]",
+            f"[bold {COLOR_WHITE}]Target Cycle (YYYY-MM)[/bold {COLOR_WHITE}]",
             default=self.db.get_profile().current_month
         )
 
         goal = self.db.add_goal(title.strip(), criteria.strip(), month.strip())
-        console.print(f"\n[bold green]✓ Goal #{goal.id} committed successfully![/bold green]")
-        console.print(f"  [cyan]Title:[/cyan] {goal.title}")
-        console.print(f"  [cyan]Criteria:[/cyan] {goal.target_criteria}")
-        console.print(f"  [cyan]Cycle:[/cyan] {goal.month}\n")
+        console.print(f"\n[bold {COLOR_SUCCESS}][OK] Goal #{goal.id} committed to ledger.[/{COLOR_SUCCESS}]")
+        console.print(f"  [{COLOR_SLATE}]Title:[/{COLOR_SLATE}] {goal.title}")
+        console.print(f"  [{COLOR_SLATE}]Criteria:[/{COLOR_SLATE}] {goal.target_criteria}")
+        console.print(f"  [{COLOR_SLATE}]Cycle:[/{COLOR_SLATE}] {goal.month}\n")
 
     def action_update(self):
-        console.print("\n[bold cyan]─── UPDATE AN EXISTING GOAL ───[/bold cyan]")
-        goal_id_str = Prompt.ask("[bold]Enter Goal ID to update[/bold]")
+        console.print(f"\n[bold {COLOR_PRIMARY}]--- UPDATE COMMITMENT RECORD ---[/bold {COLOR_PRIMARY}]")
+        goal_id_str = Prompt.ask(f"[bold {COLOR_WHITE}]Goal ID to update[/bold {COLOR_WHITE}]")
         if not goal_id_str.isdigit():
-            console.print("[red]Invalid Goal ID.[/red]")
+            console.print(f"[{COLOR_DANGER}][!] Invalid Goal ID.[/{COLOR_DANGER}]")
             return
 
         goal_id = int(goal_id_str)
         goal = self.db.get_goal(goal_id)
         if not goal:
-            console.print(f"[red]Goal #{goal_id} not found.[/red]")
+            console.print(f"[{COLOR_DANGER}][!] Goal #{goal_id} not found.[/{COLOR_DANGER}]")
             return
 
-        console.print(f"Current Title: [cyan]{goal.title}[/cyan]")
-        new_title = Prompt.ask("[bold]New Title[/bold] (leave blank to keep current)", default=goal.title)
+        console.print(f"Current Title: [{COLOR_PRIMARY}]{goal.title}[/{COLOR_PRIMARY}]")
+        new_title = Prompt.ask(f"[bold {COLOR_WHITE}]New Title[/bold {COLOR_WHITE}] (leave blank to keep current)", default=goal.title)
 
-        console.print(f"Current Criteria: [cyan]{goal.target_criteria}[/cyan]")
-        new_criteria = Prompt.ask("[bold]New Criteria[/bold] (leave blank to keep current)", default=goal.target_criteria)
+        console.print(f"Current Criteria: [{COLOR_PRIMARY}]{goal.target_criteria}[/{COLOR_PRIMARY}]")
+        new_criteria = Prompt.ask(f"[bold {COLOR_WHITE}]New Criteria[/bold {COLOR_WHITE}] (leave blank to keep current)", default=goal.target_criteria)
 
         updated = self.db.update_goal(goal_id, new_title.strip(), new_criteria.strip())
-        console.print(f"\n[bold green]✓ Goal #{goal_id} successfully updated![/bold green]")
-        console.print(f"  [cyan]Title:[/cyan] {updated.title}")
-        console.print(f"  [cyan]Criteria:[/cyan] {updated.target_criteria}\n")
+        console.print(f"\n[bold {COLOR_SUCCESS}][OK] Goal #{goal_id} updated.[/{COLOR_SUCCESS}]")
+        console.print(f"  [{COLOR_SLATE}]Title:[/{COLOR_SLATE}] {updated.title}")
+        console.print(f"  [{COLOR_SLATE}]Criteria:[/{COLOR_SLATE}] {updated.target_criteria}\n")
 
     def action_delete(self):
-        console.print("\n[bold cyan]─── REMOVE / DELETE GOAL ───[/bold cyan]")
-        goal_id_str = Prompt.ask("[bold]Enter Goal ID to delete[/bold]")
+        console.print(f"\n[bold {COLOR_PRIMARY}]--- REMOVE COMMITMENT RECORD ---[/bold {COLOR_PRIMARY}]")
+        goal_id_str = Prompt.ask(f"[bold {COLOR_WHITE}]Goal ID to delete[/bold {COLOR_WHITE}]")
         if not goal_id_str.isdigit():
-            console.print("[red]Invalid Goal ID.[/red]")
+            console.print(f"[{COLOR_DANGER}][!] Invalid Goal ID.[/{COLOR_DANGER}]")
             return
 
         goal_id = int(goal_id_str)
         goal = self.db.get_goal(goal_id)
         if not goal:
-            console.print(f"[red]Goal #{goal_id} not found.[/red]")
+            console.print(f"[{COLOR_DANGER}][!] Goal #{goal_id} not found.[/{COLOR_DANGER}]")
             return
 
-        confirm = Confirm.ask(f"[bold red]Are you sure you want to permanently delete Goal #{goal_id} ('{goal.title}')?[/bold red]")
+        confirm = Confirm.ask(f"[bold {COLOR_DANGER}]Permanently remove Goal #{goal_id} ('{goal.title}')?[/bold {COLOR_DANGER}]")
         if confirm:
             self.db.delete_goal(goal_id)
-            console.print(f"[bold green]✓ Goal #{goal_id} deleted.[/bold green]\n")
+            console.print(f"[bold {COLOR_SUCCESS}][OK] Goal #{goal_id} removed.[/{COLOR_SUCCESS}]\n")
         else:
-            console.print("[dim]Deletion cancelled.[/dim]\n")
+            console.print(f"[{COLOR_MUTED}]Removal aborted.[/{COLOR_MUTED}]\n")
 
     def action_submit(self):
-        console.print("\n[bold cyan]─── SUBMIT PROOF / EVIDENCE ───[/bold cyan]")
-        goal_id_str = Prompt.ask("[bold]Enter Goal ID[/bold]")
+        console.print(f"\n[bold {COLOR_PRIMARY}]--- SUBMIT VERIFICATION PROOF ---[/bold {COLOR_PRIMARY}]")
+        goal_id_str = Prompt.ask(f"[bold {COLOR_WHITE}]Goal ID[/bold {COLOR_WHITE}]")
         if not goal_id_str.isdigit():
-            console.print("[red]Invalid Goal ID.[/red]")
+            console.print(f"[{COLOR_DANGER}][!] Invalid Goal ID.[/{COLOR_DANGER}]")
             return
 
         goal_id = int(goal_id_str)
         goal = self.db.get_goal(goal_id)
         if not goal:
-            console.print(f"[red]Goal #{goal_id} not found.[/red]")
+            console.print(f"[{COLOR_DANGER}][!] Goal #{goal_id} not found.[/{COLOR_DANGER}]")
             return
 
-        console.print(f"[bold]Submitting evidence for Goal #{goal_id}:[/bold] '{goal.title}'")
-        console.print(f"[bold]Target criteria was:[/bold] '{goal.target_criteria}'")
-        console.print("[dim]Tips: Provide URLs, commit hashes, specific metrics, file locations, and dates to ensure a passing score.[/dim]\n")
+        console.print(f"Goal #{goal_id}: [{COLOR_PRIMARY}]{goal.title}[/{COLOR_PRIMARY}]")
+        console.print(f"Required Criteria: [{COLOR_SLATE}]{goal.target_criteria}[/{COLOR_SLATE}]")
+        console.print(f"[{COLOR_MUTED}]Evaluation factors: Quantitative numbers, artifact links, dates, and zero justification vocabulary.[/{COLOR_MUTED}]\n")
 
-        evidence = Prompt.ask("[bold]Enter Your Verification Evidence / Proof[/bold]")
+        evidence = Prompt.ask(f"[bold {COLOR_WHITE}]Enter Verification Evidence Text / Links[/bold {COLOR_WHITE}]")
         if not evidence.strip():
-            console.print("[red]Evidence cannot be blank.[/red]")
+            console.print(f"[{COLOR_DANGER}][!] Evidence submission cannot be empty.[/{COLOR_DANGER}]")
             return
 
         updated = self.db.submit_evidence(goal_id, evidence.strip())
-        console.print(f"\n[bold green]✓ Evidence recorded for Goal #{goal_id}![/bold green]")
-        console.print("[dim]You can now run '6' or 'audit' to receive AI Judge evaluation.[/dim]\n")
+        console.print(f"\n[bold {COLOR_SUCCESS}][OK] Evidence logged for Goal #{goal_id}.[/{COLOR_SUCCESS}]")
+        console.print(f"[{COLOR_MUTED}]Execute '6' or 'audit' to run automated evaluation.[/{COLOR_MUTED}]\n")
 
     def action_audit(self):
-        console.print("\n[bold cyan]─── AI EVIDENCE AUDIT & CROSS-EXAMINATION ───[/bold cyan]")
-        goal_id_str = Prompt.ask("[bold]Enter Goal ID to audit[/bold]")
+        console.print(f"\n[bold {COLOR_PRIMARY}]--- INITIATING EVIDENCE CROSS-EXAMINATION ---[/bold {COLOR_PRIMARY}]")
+        goal_id_str = Prompt.ask(f"[bold {COLOR_WHITE}]Goal ID to audit[/bold {COLOR_WHITE}]")
         if not goal_id_str.isdigit():
-            console.print("[red]Invalid Goal ID.[/red]")
+            console.print(f"[{COLOR_DANGER}][!] Invalid Goal ID.[/{COLOR_DANGER}]")
             return
 
         goal_id = int(goal_id_str)
         goal = self.db.get_goal(goal_id)
         if not goal:
-            console.print(f"[red]Goal #{goal_id} not found.[/red]")
+            console.print(f"[{COLOR_DANGER}][!] Goal #{goal_id} not found.[/{COLOR_DANGER}]")
             return
 
-        console.print(f"\n[dim cyan]⚖️ INITIATING TrackS CROSS-EXAMINATION FOR '{goal.title}'...[/dim cyan]")
+        console.print(f"\n[{COLOR_SLATE}]Running heuristic validation engine on Goal #{goal_id} ('{goal.title}')...[/{COLOR_SLATE}]")
         decision = self.judge.execute_audit(goal_id)
 
         if decision.passed:
             panel_content = (
-                f"[bold green]🏆 {decision.verdict_summary}[/bold green]\n\n"
-                f"[bold]Feedback Analysis:[/bold]\n{decision.feedback}\n\n"
-                f"[yellow]XP Reward:[/yellow] [bold green]+{decision.xp_delta} XP[/bold green]\n"
-                f"[cyan]Accountability Strikes:[/cyan] 0"
+                f"[bold {COLOR_SUCCESS}][PASS] {decision.verdict_summary}[/bold {COLOR_SUCCESS}]\n\n"
+                f"[bold {COLOR_WHITE}]Evaluation Log:[/bold {COLOR_WHITE}]\n{decision.feedback}\n\n"
+                f"[{COLOR_WARNING}]Reward Granted:[/{COLOR_WARNING}] [bold {COLOR_SUCCESS}]+{decision.xp_delta} XP[/bold {COLOR_SUCCESS}]  |  "
+                f"Strikes Added: 0"
             )
-            console.print(Panel(panel_content, border_style="green", box=box.ROUNDED, title="✅ AUDIT PASSED"))
+            console.print(Panel(panel_content, border_style=COLOR_SUCCESS, box=BOX_STYLE, title=f"[bold {COLOR_SUCCESS}][AUDIT VERDICT :: PASSED][/bold {COLOR_SUCCESS}]"))
         else:
             panel_content = (
-                f"[bold red]❌ {decision.verdict_summary}[/bold red]\n\n"
-                f"[bold]Feedback Analysis:[/bold]\n{decision.feedback}\n\n"
-                f"[yellow]XP Penalty:[/yellow] [bold red]{decision.xp_delta} XP[/bold red]\n"
-                f"[red]Strikes Added:[/red] [bold red]+{decision.strike_delta} Strike[/bold red]\n\n"
+                f"[bold {COLOR_DANGER}][FAIL] {decision.verdict_summary}[/bold {COLOR_DANGER}]\n\n"
+                f"[bold {COLOR_WHITE}]Evaluation Log:[/bold {COLOR_WHITE}]\n{decision.feedback}\n\n"
+                f"[{COLOR_WARNING}]Sanction:[/{COLOR_WARNING}] [bold {COLOR_DANGER}]{decision.xp_delta} XP[/bold {COLOR_DANGER}]  |  "
+                f"[bold {COLOR_DANGER}]+{decision.strike_delta} Strike Added[/bold {COLOR_DANGER}]\n\n"
                 f"{decision.roast}\n\n"
-                f"[bold white]MANDATORY PENALTY TASK:[/bold white]\n"
-                f"👉 [bold underline red]{decision.assigned_penalty}[/bold underline red]\n\n"
-                f"[dim]Complete this penance and run 'clear-penalty' to restore honor.[/dim]"
+                f"[bold {COLOR_WHITE}]MANDATORY PENANCE OBLIGATION:[/bold {COLOR_WHITE}]\n"
+                f"  >> [bold underline {COLOR_WARNING}]{decision.assigned_penalty}[/bold underline {COLOR_WARNING}]\n\n"
+                f"[{COLOR_MUTED}]Complete this task and execute 'clear-penalty' to clear sanction.[/{COLOR_MUTED}]"
             )
-            console.print(Panel(panel_content, border_style="red", box=box.HEAVY, title="🔥 AUDIT FAILED & PENALIZED"))
+            console.print(Panel(panel_content, border_style=COLOR_DANGER, box=BOX_HEAVY, title=f"[bold {COLOR_DANGER}][AUDIT VERDICT :: FAILED & SANCTIONED][/bold {COLOR_DANGER}]"))
 
     def action_clear_penalty(self):
-        console.print("\n[bold cyan]─── CLEAR ASSIGNED PENALTY TASK ───[/bold cyan]")
+        console.print(f"\n[bold {COLOR_PRIMARY}]--- RESOLVE PENANCE OBLIGATION ---[/bold {COLOR_PRIMARY}]")
         uncleared = self.db.get_uncleared_penalties()
         if not uncleared:
-            console.print("[green]No uncleared penalties found! You have zero active penances.[/green]\n")
+            console.print(f"[{COLOR_SUCCESS}][OK] No active penalties recorded.[/{COLOR_SUCCESS}]\n")
             return
 
-        pen_id_str = Prompt.ask("[bold]Enter Penalty ID to clear[/bold]")
+        pen_id_str = Prompt.ask(f"[bold {COLOR_WHITE}]Penalty ID to clear[/bold {COLOR_WHITE}]")
         if not pen_id_str.isdigit():
-            console.print("[red]Invalid Penalty ID.[/red]")
+            console.print(f"[{COLOR_DANGER}][!] Invalid Penalty ID.[/{COLOR_DANGER}]")
             return
 
         pen_id = int(pen_id_str)
         self.db.clear_penalty(pen_id)
-        console.print(f"[bold green]✓ Penalty #{pen_id} marked as CLEARED![/bold green]")
-        console.print("[dim]Honor restored. Maintain your discipline for the rest of the cycle.[/dim]\n")
+        console.print(f"[bold {COLOR_SUCCESS}][OK] Penalty #{pen_id} resolved and recorded in historical ledger.[/{COLOR_SUCCESS}]\n")
 
     def action_history(self):
-        console.print("\n[bold cyan]─── HISTORICAL ACCOUNTABILITY & PENALTY LEDGER ───[/bold cyan]")
+        console.print(f"\n[bold {COLOR_PRIMARY}]--- HISTORICAL AUDIT & PENALTY LEDGER ---[/bold {COLOR_PRIMARY}]")
         penalties = self.db.get_all_penalties()
         if not penalties:
-            console.print("[dim]No penalty history recorded in the ledger.[/dim]\n")
+            console.print(f"[{COLOR_MUTED}]Historical ledger is empty.[/{COLOR_MUTED}]\n")
             return
 
-        table = Table(box=box.SIMPLE_HEAVY, header_style="bold magenta")
+        table = Table(box=BOX_STYLE, border_style=COLOR_DARK_SLATE, header_style=f"bold {COLOR_PRIMARY}")
         table.add_column("ID", width=5, justify="center")
         table.add_column("Cycle", width=8, justify="center")
-        table.add_column("Failed Goal", width=25)
+        table.add_column("Breached Goal", width=25)
         table.add_column("XP Lost", width=9, justify="center")
         table.add_column("Assigned Penance", width=36)
         table.add_column("Status", width=12, justify="center")
 
         for p in penalties:
-            stat = "[green]CLEARED[/green]" if p.is_cleared else "[bold red]ACTIVE[/bold red]"
+            stat = f"[{COLOR_SUCCESS}][RESOLVED][/{COLOR_SUCCESS}]" if p.is_cleared else f"[bold {COLOR_DANGER}][ACTIVE][/bold {COLOR_DANGER}]"
             table.add_row(str(p.id), p.month, p.goal_title, f"-{p.xp_lost}", p.penalty_task, stat)
 
         console.print(table)
 
     def action_remove_history(self):
-        console.print("\n[bold cyan]─── PURGE / REMOVE HISTORY ───[/bold cyan]")
+        console.print(f"\n[bold {COLOR_PRIMARY}]--- PURGE HISTORICAL RECORDS ---[/bold {COLOR_PRIMARY}]")
         choice = Prompt.ask(
-            "[bold]Select option[/bold]",
+            f"[bold {COLOR_WHITE}]Select purge mode[/bold {COLOR_WHITE}]",
             choices=["single", "all", "cancel"],
             default="cancel"
         )
         if choice == "cancel":
             return
         elif choice == "single":
-            pen_id_str = Prompt.ask("[bold]Enter Penalty ID to delete[/bold]")
+            pen_id_str = Prompt.ask(f"[bold {COLOR_WHITE}]Penalty ID to delete[/bold {COLOR_WHITE}]")
             if pen_id_str.isdigit() and self.db.delete_penalty(int(pen_id_str)):
-                console.print(f"[bold green]✓ Penalty #{pen_id_str} deleted from history.[/bold green]\n")
+                console.print(f"[bold {COLOR_SUCCESS}][OK] Penalty record #{pen_id_str} purged.[/{COLOR_SUCCESS}]\n")
             else:
-                console.print("[red]Penalty ID not found.[/red]\n")
+                console.print(f"[{COLOR_DANGER}][!] Record ID not found.[/{COLOR_DANGER}]\n")
         elif choice == "all":
-            if Confirm.ask("[bold red]Purge ALL historical penalty records permanently?[/bold red]"):
+            if Confirm.ask(f"[bold {COLOR_DANGER}]Purge ALL historical audit and penalty entries?[/bold {COLOR_DANGER}]"):
                 count = self.db.clear_penalty_history()
-                console.print(f"[bold green]✓ Purged {count} penalty records from history.[/bold green]\n")
+                console.print(f"[bold {COLOR_SUCCESS}][OK] Purged {count} records from ledger.[/{COLOR_SUCCESS}]\n")
 
     def action_advice(self):
-        console.print("\n[bold cyan]─── AI GOAL COACHING & CRITERIA STRENGTHENING ───[/bold cyan]")
-        draft_goal = Prompt.ask("[bold]Describe the goal you want to achieve[/bold]")
+        console.print(f"\n[bold {COLOR_PRIMARY}]--- CRITERIA HARDENING & OPTIMIZATION ---[/bold {COLOR_PRIMARY}]")
+        draft_goal = Prompt.ask(f"[bold {COLOR_WHITE}]Draft goal description[/bold {COLOR_WHITE}]")
         if not draft_goal.strip():
             return
 
-        console.print(f"\n[dim cyan]Analyzing goal: '{draft_goal}'...[/dim cyan]")
+        console.print(f"\n[{COLOR_SLATE}]Analyzing draft commitment: '{draft_goal}'...[/{COLOR_SLATE}]")
         
-        # Heuristic coaching analysis
         is_vague = any(w in draft_goal.lower() for w in ["better", "more", "learn", "study", "try", "work on"])
         suggestions = []
         if is_vague:
-            suggestions.append("⚠️ Goal uses subjective or vague wording. Replace 'learn/work on' with a concrete deliverable.")
+            suggestions.append(f"[-] Replace subjective verbs ('learn', 'work on') with a tangible deliverable.")
         
-        suggestions.append("💡 SMART Recommendation: Attach an exact artifact (e.g. 'Deploy repository to URL', 'Complete 30 sessions with Strava log', 'Write 10,000 words in docs/').")
-        suggestions.append("💡 Pass Requirement: AI Judge requires numbers (e.g., 20 chapters, 50km), dates, and verifiable links to pass the 70-point threshold.")
+        suggestions.append(f"[+] Attach measurable artifact: (e.g. 'Deploy public release to URL', 'Complete 25 sessions', 'Log 50km on Strava').")
+        suggestions.append(f"[+] The 70-point verification threshold requires numbers, dates, and artifact links.")
 
         coaching_panel = (
-            f"[bold yellow]TrackS COACHING FEEDBACK:[/bold yellow]\n\n"
+            f"[bold {COLOR_WARNING}]CRITERIA RECOMMENDATIONS:[/bold {COLOR_WARNING}]\n\n"
             + "\n".join(suggestions) + "\n\n"
-            f"[bold green]Recommended Criteria Format:[/bold green]\n"
-            f"\"Deliver [Specific Artifact] verified via [Link/Log/File] with [Exact Metric] by [Date]\""
+            f"[bold {COLOR_WHITE}]Standard Commitment Template:[/bold {COLOR_WHITE}]\n"
+            f"  [{COLOR_PRIMARY}]\"Deliver [Artifact] verified via [Link/Report/Hash] with [Specific Metric] by [Date]\"[/{COLOR_PRIMARY}]"
         )
-        console.print(Panel(coaching_panel, border_style="yellow", box=box.ROUNDED))
+        console.print(Panel(coaching_panel, border_style=COLOR_WARNING, box=BOX_STYLE))
 
     def action_rollover(self):
-        console.print("\n[bold cyan]─── EXECUTING MONTH-END ROLLOVER CHECK ───[/bold cyan]")
+        console.print(f"\n[bold {COLOR_PRIMARY}]--- RECONCILING CYCLE ROLLOVER ---[/bold {COLOR_PRIMARY}]")
         res = self.scheduler.check_and_process_rollover()
         if res["rollover_detected"]:
-            console.print(f"[bold yellow]Month rollover detected from {res['previous_month']} to {res['new_month']}![/bold yellow]")
+            console.print(f"[bold {COLOR_WARNING}]Cycle rollover executed: {res['previous_month']} -> {res['new_month']}[/bold {COLOR_WARNING}]")
             console.print(f"  - Goals auto-audited: {len(res['audited_goals'])}")
-            console.print(f"  - Penalties triggered: {res['penalties_triggered']}")
+            console.print(f"  - Sanctions applied: {res['penalties_triggered']}")
         else:
-            console.print(f"[dim]Still in active cycle {res['previous_month']}. No rollover needed.[/dim]\n")
+            console.print(f"[{COLOR_MUTED}]Current cycle {res['previous_month']} is active. No rollover required.[/{COLOR_MUTED}]\n")
 
     def run(self):
         console.clear()
-        console.print("[bold cyan]════════════════════════════════════════════════════════════════════[/bold cyan]")
-        console.print("[bold yellow]          TrackS: AUTONOMOUS AI GOAL & PENALTY ENGINE             [/bold yellow]")
-        console.print("[bold cyan]════════════════════════════════════════════════════════════════════[/bold cyan]\n")
+        profile = self.db.get_profile()
 
         self.show_dashboard()
 
         try:
             while True:
                 self.show_menu()
-                cmd = Prompt.ask("\n[bold cyan][TrackS][/bold cyan] [bold white]Select action[/bold white]").strip().lower()
+                prompt_label = f"[{COLOR_PRIMARY}]tracks:{profile.current_month}[/{COLOR_PRIMARY}] [bold {COLOR_WHITE}]>>[/bold {COLOR_WHITE}] "
+                cmd = console.input(prompt_label).strip().lower()
 
                 if cmd in ["0", "exit", "quit", "q"]:
-                    console.print("\n[bold yellow]Exiting TrackS. Stay disciplined.[/bold yellow]\n")
+                    console.print(f"\n[{COLOR_SLATE}]Session terminated. Compliance active.[/{COLOR_SLATE}]\n")
                     break
                 elif cmd in ["1", "dashboard", "status"]:
                     console.clear()
@@ -409,9 +424,9 @@ class GoalAgentShell:
                     console.clear()
                     self.show_dashboard()
                 else:
-                    console.print(f"[red]Unknown command '{cmd}'. Select 1-11 or 0 to exit.[/red]")
+                    console.print(f"[{COLOR_DANGER}][!] Unrecognized command '{cmd}'. Enter 1-11 or 0 to exit.[/{COLOR_DANGER}]")
         except (KeyboardInterrupt, EOFError):
-            console.print("\n[bold yellow]Session ended. Stay disciplined.[/bold yellow]\n")
+            console.print(f"\n[{COLOR_SLATE}]Session interrupted. Compliance active.[/{COLOR_SLATE}]\n")
 
 
 def launch_agent_shell():

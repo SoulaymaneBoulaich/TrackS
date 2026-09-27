@@ -52,14 +52,14 @@ def generate_roast_and_penalty(goal_title: str, criteria: str, evidence: str, st
 
     base_roast = random.choice(ROAST_TEMPLATES)
     custom_roast = (
-        f"🚨 [GOAL FAILED: '{goal_title}'] 🚨\n"
-        f"Criteria demanded: '{criteria}'\n"
-        f"What you brought: '{evidence if evidence else 'ABSOLUTELY NOTHING'}'\n\n"
-        f"🔥 THE VERDICT:\n{base_roast}"
+        f"[AUDIT FAILED: '{goal_title}']\n"
+        f"Criteria Demanded: '{criteria}'\n"
+        f"Submitted Evidence: '{evidence if evidence else 'ZERO EVIDENCE'}'\n\n"
+        f"[THE VERDICT]\n{base_roast}"
     )
 
     if strikes >= 2:
-        custom_roast += f"\n\n⚠️ CRITICAL WARNING: You now have {strikes + 1} STRIKES. You are on the verge of total accountability bankruptcy."
+        custom_roast += f"\n\n[CRITICAL WARNING] You now have {strikes + 1} STRIKES. Discipline bankruptcy triggered."
 
     penalty_task = random.choice(PENALTY_TASKS_BY_TIER[severity])
     return severity, custom_roast, penalty_task

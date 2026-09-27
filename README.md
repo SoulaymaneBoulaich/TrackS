@@ -104,6 +104,12 @@ tracks
 
 The interface provides an active status panel, strike indicator, current cycle goals, pending penance tasks, and a command loop.
 
+#### Cyber-Slate Industrial Aesthetics
+TrackS avoids terminal emoji distortion across legacy and modern consoles by adopting a Cyber-Slate Industrial aesthetic:
+- **Zero Emojis**: Replaced with monospace bracketed indicators (`[+]`, `[-]`, `[!]`, `[*]`, `[PASS]`, `[FAIL]`).
+- **Cohesive Palette**: Electric Cyan (`#00e5ff`) for structural chrome, Bright Mint (`#00ff88`) for verified goals, Industrial Amber (`#f59e0b`) for active warnings, and Crimson (`#ef4444`) for strikes and penalties.
+- **Cycle Telemetry**: Real-time ASCII progress bar tracking calendar month progress against goal milestones.
+
 #### Available Menu Actions
 - `1` / `dashboard`: Refresh and render the active monthly dashboard.
 - `2` / `add`: Commit to a new monthly goal with verification criteria.

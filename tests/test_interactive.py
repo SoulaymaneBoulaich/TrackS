@@ -67,9 +67,9 @@ def test_agent_shell_methods(temp_db, capsys):
     # Test dashboard rendering does not crash
     shell.show_dashboard()
     captured = capsys.readouterr()
-    assert "DISCIPLINE ARBITER" in captured.out or "SENTINEL" in captured.out
+    assert "TrackS" in captured.out or "ACCOUNTABILITY" in captured.out
 
     # Test menu display
     shell.show_menu()
     captured_menu = capsys.readouterr()
-    assert "AGENT COMMAND MENU" in captured_menu.out
+    assert "COMMAND MATRIX" in captured_menu.out or "COMMAND" in captured_menu.out

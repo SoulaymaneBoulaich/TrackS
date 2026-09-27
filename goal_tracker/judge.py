@@ -40,10 +40,10 @@ class GoalJudge:
         words = len(evidence.strip().split())
         if words >= 40:
             score += 15
-            feedback_points.append("✓ Thorough written documentation provided.")
+            feedback_points.append("[+] Thorough written documentation provided.")
         elif words < 10:
             score -= 20
-            feedback_points.append("✗ Evidence is suspiciously brief and lacks detail.")
+            feedback_points.append("[-] Evidence is suspiciously brief and lacks detail.")
 
         # 2. Presence of concrete proof artifacts (links, numbers, metrics, dates, file paths)
         has_numbers = bool(re.search(r"\b\d+(\.\d+)?%?\b", evidence))
@@ -52,25 +52,25 @@ class GoalJudge:
 
         if has_numbers:
             score += 15
-            feedback_points.append("✓ Quantifiable metrics or numbers detected.")
+            feedback_points.append("[+] Quantifiable metrics or numbers detected.")
         else:
             score -= 10
-            feedback_points.append("✗ No quantifiable metrics or data points identified.")
+            feedback_points.append("[-] No quantifiable metrics or data points identified.")
 
         if has_links:
             score += 15
-            feedback_points.append("✓ External verification link, commit, or file path provided.")
+            feedback_points.append("[+] External verification link, commit, or file path provided.")
 
         if has_dates:
             score += 5
-            feedback_points.append("✓ Temporal milestones/dates cited.")
+            feedback_points.append("[+] Temporal milestones/dates cited.")
 
         # 3. Check for excuse language vs proof language
         excuse_patterns = [r"\btried\b", r"\balmost\b", r"\bbusy\b", r"\bsick\b", r"\bnext month\b", r"\bunfortunately\b"]
         for ep in excuse_patterns:
             if re.search(ep, evidence, re.I):
                 score -= 15
-                feedback_points.append(f"✗ Detected justification/excuse vocabulary ('{ep.replace(chr(92)+'b', '')}').")
+                feedback_points.append(f"[-] Detected justification/excuse vocabulary ('{ep.replace(chr(92)+'b', '')}').")
 
         # Clamp score between 0 and 100
         score = max(0, min(100, score))
