@@ -114,10 +114,12 @@ $ps1Launcher = Join-Path $binDir "tracks.ps1"
 
 $cmdScript = @"
 @echo off
+set "PYTHONPATH=%~dp0..;%PYTHONPATH%"
 $pythonCmd -m goal_tracker %*
 "@
 
 $ps1Script = @"
+`$env:PYTHONPATH = (Join-Path `$PSScriptRoot "..") + ";" + `$env:PYTHONPATH
 & "$pythonCmd" -m goal_tracker `$args
 "@
 
