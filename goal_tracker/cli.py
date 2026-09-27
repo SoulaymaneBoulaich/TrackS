@@ -241,6 +241,10 @@ def main():
     parser_rem.add_argument("--penalty-id", "-p", type=int, default=None, help="Specific penalty ID to delete")
     parser_rem.add_argument("--all", action="store_true", help="Purge all penalty records")
 
+    # Reset
+    parser_reset = subparsers.add_parser("reset", help="Purge all goals and penalties and reset profile to clean state")
+    parser_reset.add_argument("--yes", "-y", action="store_true", help="Confirm reset without interactive prompt")
+
     # Interactive Agent Shell
     subparsers.add_parser("agent", help="Launch the interactive AI Agent terminal shell")
     subparsers.add_parser("interactive", help="Launch the interactive AI Agent terminal shell")
@@ -287,6 +291,17 @@ def main():
             console.print(f"[bold {COLOR_SUCCESS}][+] Purged {cnt} penalty records from history.[/bold {COLOR_SUCCESS}]")
         else:
             console.print(f"[bold {COLOR_WARNING}][!] Specify --penalty-id <id> or --all[/bold {COLOR_WARNING}]")
+    elif args.command == "reset":
+        if args.yes:
+            db.reset_database()
+            console.print(f"[bold {COLOR_SUCCESS}][+] Database reset: All goals and penalties purged, profile restored to Level 1 (1000 XP, 0 strikes).[/bold {COLOR_SUCCESS}]")
+        else:
+            ans = input("Are you sure you want to reset all goals and penalties? (y/N): ")
+            if ans.strip().lower() in ["y", "yes"]:
+                db.reset_database()
+                console.print(f"[bold {COLOR_SUCCESS}][+] Database reset successfully.[/bold {COLOR_SUCCESS}]")
+            else:
+                console.print(f"[bold {COLOR_WARNING}][*] Reset aborted.[/bold {COLOR_WARNING}]")
 
 if __name__ == "__main__":
     main()

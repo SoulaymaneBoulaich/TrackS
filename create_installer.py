@@ -65,19 +65,56 @@ if (Get-Command "python" -ErrorAction SilentlyContinue) {{
 $pyVersion = & $pythonCmd --version 2>&1
 Write-Host "[OK] Found $pyVersion" -ForegroundColor Green
 
-# 2. Prompt user for trusted destination directory
-$defaultPath = Join-Path $HOME ".tracks"
-Write-Host ""
-Write-Host "Where would you like to install TrackS?" -ForegroundColor Cyan
-Write-Host "Press [Enter] to use default: $defaultPath" -ForegroundColor Gray
-$userChoice = Read-Host "Trusted directory path"
+# 2. Location Intelligence & Destination Confirmation
+$currentDir = (Get-Location).Path
+$defaultHomePath = Join-Path $HOME ".tracks"
 
-$targetDir = $defaultPath
-if (![string]::IsNullOrWhiteSpace($userChoice)) {{
-    $cleanChoice = $userChoice.Trim().Trim('"').Trim("'")
-    $rawPath = [System.IO.Path]::GetFullPath($cleanChoice)
-    $leafName = Split-Path $rawPath -Leaf
-    if ($leafName -notmatch "^(?i)tracks?$") {{
+$currentLeaf = Split-Path $currentDir -Leaf
+if ($currentLeaf -match "^(?i)tracks?$") {{
+    $suggestedPath = $currentDir
+}} else {{
+    $suggestedPath = Join-Path $currentDir "tracks"
+}}
+
+Write-Host ""
+Write-Host "====================================================================" -ForegroundColor Cyan
+Write-Host "                INSTALLATION DIRECTORY CONFIRMATION                 " -ForegroundColor Cyan
+Write-Host "====================================================================" -ForegroundColor Cyan
+Write-Host "[*] Active directory detected:" -ForegroundColor White
+Write-Host "    $currentDir" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "Install TrackS into this location?" -ForegroundColor White
+Write-Host "  - Press [Enter] or 'Y' to install into: $suggestedPath" -ForegroundColor Green
+Write-Host "  - Type 'N' to use home default: $defaultHomePath" -ForegroundColor Cyan
+Write-Host "  - Or enter any custom path directly." -ForegroundColor Gray
+Write-Host ""
+$userChoice = Read-Host "Proceed with active directory? [Y/n/custom path]"
+
+$targetDir = $suggestedPath
+$trimmed = $userChoice.Trim().Trim('"').Trim("'")
+
+if ([string]::IsNullOrWhiteSpace($trimmed) -or $trimmed -match "^(?i)y(es)?$") {{
+    $targetDir = $suggestedPath
+}} elseif ($trimmed -match "^(?i)n(o)?$") {{
+    Write-Host ""
+    Write-Host "Enter custom directory path [Default: $defaultHomePath]:" -ForegroundColor Cyan
+    $altChoice = Read-Host "Directory path"
+    $altTrimmed = $altChoice.Trim().Trim('"').Trim("'")
+    if ([string]::IsNullOrWhiteSpace($altTrimmed)) {{
+        $targetDir = $defaultHomePath
+    }} else {{
+        $rawPath = [System.IO.Path]::GetFullPath($altTrimmed)
+        $leaf = Split-Path $rawPath -Leaf
+        if ($leaf -notmatch "^(?i)tracks?$") {{
+            $targetDir = Join-Path $rawPath "tracks"
+        }} else {{
+            $targetDir = $rawPath
+        }}
+    }}
+}} else {{
+    $rawPath = [System.IO.Path]::GetFullPath($trimmed)
+    $leaf = Split-Path $rawPath -Leaf
+    if ($leaf -notmatch "^(?i)tracks?$") {{
         $targetDir = Join-Path $rawPath "tracks"
     }} else {{
         $targetDir = $rawPath
@@ -192,17 +229,56 @@ fi
 
 echo -e "\\033[0;32m[OK] Found $($PYTHON_CMD --version)\\033[0m"
 
-# 2. Destination directory prompt
-DEFAULT_PATH="$HOME/.tracks"
-echo ""
-echo -e "\\033[1;36mWhere would you like to install TrackS?\\033[0m"
-read -p "Trusted directory path [Default: $DEFAULT_PATH]: " USER_CHOICE
-RAW_PATH="${{USER_CHOICE:-$DEFAULT_PATH}}"
-BASE_NAME=$(basename "$RAW_PATH")
-if [[ "$BASE_NAME" =~ ^[Tt]racks?$ ]]; then
-    TARGET_DIR="$RAW_PATH"
+# 2. Location Intelligence & Destination Confirmation
+CURRENT_DIR="$(pwd)"
+DEFAULT_HOME_PATH="$HOME/.tracks"
+
+CURRENT_LEAF="$(basename "$CURRENT_DIR")"
+if [[ "$CURRENT_LEAF" =~ ^[Tt]racks?$ ]]; then
+    SUGGESTED_PATH="$CURRENT_DIR"
 else
-    TARGET_DIR="$RAW_PATH/tracks"
+    SUGGESTED_PATH="$CURRENT_DIR/tracks"
+fi
+
+echo ""
+echo -e "\\033[1;36m====================================================================\\033[0m"
+echo -e "\\033[1;36m                INSTALLATION DIRECTORY CONFIRMATION                 \\033[0m"
+echo -e "\\033[1;36m====================================================================\\033[0m"
+echo -e "\\033[0;37m[*] Active directory detected:\\033[0m"
+echo -e "    \\033[1;33m$CURRENT_DIR\\033[0m"
+echo ""
+echo -e "Install TrackS into this location?"
+echo -e "  - Press \\033[1;32m[Enter]\\033[0m or \\033[1;32mY\\033[0m to install into: \\033[1;32m$SUGGESTED_PATH\\033[0m"
+echo -e "  - Type \\033[1;36mN\\033[0m to use home default: \\033[1;36m$DEFAULT_HOME_PATH\\033[0m"
+echo -e "  - Or enter any custom path directly."
+echo ""
+read -p "Proceed with active directory? [Y/n/custom path]: " USER_CHOICE
+
+TRIMMED="$(echo "$USER_CHOICE" | xargs)"
+
+if [ -z "$TRIMMED" ] || [[ "$TRIMMED" =~ ^[Yy]([Ee][Ss])?$ ]]; then
+    TARGET_DIR="$SUGGESTED_PATH"
+elif [[ "$TRIMMED" =~ ^[Nn]([Oo])?$ ]]; then
+    echo ""
+    read -p "Enter custom directory path [Default: $DEFAULT_HOME_PATH]: " ALT_CHOICE
+    ALT_TRIMMED="$(echo "$ALT_CHOICE" | xargs)"
+    if [ -z "$ALT_TRIMMED" ]; then
+        TARGET_DIR="$DEFAULT_HOME_PATH"
+    else
+        ALT_BASE="$(basename "$ALT_TRIMMED")"
+        if [[ "$ALT_BASE" =~ ^[Tt]racks?$ ]]; then
+            TARGET_DIR="$ALT_TRIMMED"
+        else
+            TARGET_DIR="$ALT_TRIMMED/tracks"
+        fi
+    fi
+else
+    CUSTOM_BASE="$(basename "$TRIMMED")"
+    if [[ "$CUSTOM_BASE" =~ ^[Tt]racks?$ ]]; then
+        TARGET_DIR="$TRIMMED"
+    else
+        TARGET_DIR="$TRIMMED/tracks"
+    fi
 fi
 
 echo -e "\\033[0;37m[*] Installing TrackS into: $TARGET_DIR\\033[0m"

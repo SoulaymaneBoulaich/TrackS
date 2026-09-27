@@ -157,6 +157,7 @@ class GoalAgentShell:
             f"  [bold {COLOR_PRIMARY}][ 9][/bold {COLOR_PRIMARY}] [bold {COLOR_WHITE}]remove-history[/bold {COLOR_WHITE}] [{COLOR_MUTED}]-- Purge single or all historical penalty logs[/{COLOR_MUTED}]\n"
             f"  [bold {COLOR_PRIMARY}][10][/bold {COLOR_PRIMARY}] [bold {COLOR_WHITE}]advice[/bold {COLOR_WHITE}]         [{COLOR_MUTED}]-- Optimize goal criteria prior to commitment[/{COLOR_MUTED}]\n"
             f"  [bold {COLOR_PRIMARY}][11][/bold {COLOR_PRIMARY}] [bold {COLOR_WHITE}]rollover[/bold {COLOR_WHITE}]       [{COLOR_MUTED}]-- Trigger month-end rollover & auto-audit past-due goals[/{COLOR_MUTED}]\n"
+            f"  [bold {COLOR_WARNING}][12][/bold {COLOR_WARNING}] [bold {COLOR_WHITE}]reset[/bold {COLOR_WHITE}]          [{COLOR_MUTED}]-- Purge all data and restore factory clean state[/{COLOR_MUTED}]\n"
             f"  [bold {COLOR_DANGER}][ 0][/bold {COLOR_DANGER}] [bold {COLOR_WHITE}]exit[/bold {COLOR_WHITE}]           [{COLOR_MUTED}]-- Terminate active session[/{COLOR_MUTED}]"
         )
         console.print(Panel(menu, border_style=COLOR_DARK_SLATE, box=BOX_STYLE))
@@ -382,6 +383,20 @@ class GoalAgentShell:
         else:
             console.print(f"[{COLOR_MUTED}]Current cycle {res['previous_month']} is active. No rollover required.[/{COLOR_MUTED}]\n")
 
+    def action_reset(self):
+        console.print(f"\n[bold {COLOR_DANGER}][!] FACTORY PURGE & RESET[/bold {COLOR_DANGER}]")
+        confirm = Prompt.ask(
+            f"[bold {COLOR_WARNING}]Are you sure you want to purge all commitments, penalties, and history?[/bold {COLOR_WARNING}]",
+            choices=["y", "n"],
+            default="n"
+        )
+        if confirm.lower() == "y":
+            self.db.reset_database()
+            console.print(f"\n[bold {COLOR_SUCCESS}][+] System restored to factory clean state: 0 goals, 0 penalties, 0 strikes (Level 1, 1000 XP).[/bold {COLOR_SUCCESS}]\n")
+            self.show_dashboard()
+        else:
+            console.print(f"[{COLOR_MUTED}]Reset cancelled.[/{COLOR_MUTED}]\n")
+
     def run(self):
         console.clear()
         profile = self.db.get_profile()
@@ -420,11 +435,13 @@ class GoalAgentShell:
                     self.action_advice()
                 elif cmd in ["11", "rollover"]:
                     self.action_rollover()
+                elif cmd in ["12", "reset", "purge"]:
+                    self.action_reset()
                 elif cmd in ["clear", "cls"]:
                     console.clear()
                     self.show_dashboard()
                 else:
-                    console.print(f"[{COLOR_DANGER}][!] Unrecognized command '{cmd}'. Enter 1-11 or 0 to exit.[/{COLOR_DANGER}]")
+                    console.print(f"[{COLOR_DANGER}][!] Unrecognized command '{cmd}'. Enter 0-12 to execute.[/{COLOR_DANGER}]")
         except (KeyboardInterrupt, EOFError):
             console.print(f"\n[{COLOR_SLATE}]Session interrupted. Compliance active.[/{COLOR_SLATE}]\n")
 

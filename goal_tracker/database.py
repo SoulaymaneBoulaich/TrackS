@@ -263,6 +263,20 @@ class Database:
             conn.commit()
             return count
 
+    def reset_database(self):
+        """Purge all goals, all penalties, and reset profile to factory state."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM goals")
+            cursor.execute("DELETE FROM penalties")
+            now_month = datetime.now().strftime("%Y-%m")
+            cursor.execute("""
+            UPDATE profile 
+            SET xp = 1000, level = 1, strikes = 0, current_month = ?, last_evaluated_month = NULL
+            WHERE id = 1
+            """, (now_month,))
+            conn.commit()
+
     def _row_to_goal(self, row) -> Goal:
         return Goal(
             id=row["id"],

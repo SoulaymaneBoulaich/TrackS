@@ -200,3 +200,24 @@ def test_roaster_escalation():
     assert sev2 == "CATASTROPHIC"
     assert "CRITICAL WARNING" in roast2
     assert task2 in PENALTY_TASKS_BY_TIER["CATASTROPHIC"]
+
+
+def test_reset_database(temp_db):
+    # Add dummy goals and penalties
+    g1 = temp_db.add_goal("Goal to purge", "Proof criteria")
+    p1 = temp_db.record_penalty(g1.id, g1.title, "2026-09", 250, 1, "Roast", "Penance")
+    temp_db.update_profile(xp=500, strikes=2)
+
+    assert len(temp_db.get_all_goals()) == 1
+    assert len(temp_db.get_all_penalties()) == 1
+    assert temp_db.get_profile().strikes == 2
+
+    # Execute factory reset
+    temp_db.reset_database()
+
+    assert len(temp_db.get_all_goals()) == 0
+    assert len(temp_db.get_all_penalties()) == 0
+    profile = temp_db.get_profile()
+    assert profile.strikes == 0
+    assert profile.xp == 1000
+    assert profile.level == 1
