@@ -180,7 +180,7 @@ class GoalAgentShell:
         )
 
         goal = self.db.add_goal(title.strip(), criteria.strip(), month.strip())
-        console.print(f"\n[bold {COLOR_SUCCESS}][OK] Goal #{goal.id} committed to ledger.[/{COLOR_SUCCESS}]")
+        console.print(f"\n[bold {COLOR_SUCCESS}][OK] Goal #{goal.id} committed to ledger.[/bold {COLOR_SUCCESS}]")
         console.print(f"  [{COLOR_SLATE}]Title:[/{COLOR_SLATE}] {goal.title}")
         console.print(f"  [{COLOR_SLATE}]Criteria:[/{COLOR_SLATE}] {goal.target_criteria}")
         console.print(f"  [{COLOR_SLATE}]Cycle:[/{COLOR_SLATE}] {goal.month}\n")
@@ -205,7 +205,7 @@ class GoalAgentShell:
         new_criteria = Prompt.ask(f"[bold {COLOR_WHITE}]New Criteria[/bold {COLOR_WHITE}] (leave blank to keep current)", default=goal.target_criteria)
 
         updated = self.db.update_goal(goal_id, new_title.strip(), new_criteria.strip())
-        console.print(f"\n[bold {COLOR_SUCCESS}][OK] Goal #{goal_id} updated.[/{COLOR_SUCCESS}]")
+        console.print(f"\n[bold {COLOR_SUCCESS}][OK] Goal #{goal_id} updated.[/bold {COLOR_SUCCESS}]")
         console.print(f"  [{COLOR_SLATE}]Title:[/{COLOR_SLATE}] {updated.title}")
         console.print(f"  [{COLOR_SLATE}]Criteria:[/{COLOR_SLATE}] {updated.target_criteria}\n")
 
@@ -225,7 +225,7 @@ class GoalAgentShell:
         confirm = Confirm.ask(f"[bold {COLOR_DANGER}]Permanently remove Goal #{goal_id} ('{goal.title}')?[/bold {COLOR_DANGER}]")
         if confirm:
             self.db.delete_goal(goal_id)
-            console.print(f"[bold {COLOR_SUCCESS}][OK] Goal #{goal_id} removed.[/{COLOR_SUCCESS}]\n")
+            console.print(f"[bold {COLOR_SUCCESS}][OK] Goal #{goal_id} removed.[/bold {COLOR_SUCCESS}]\n")
         else:
             console.print(f"[{COLOR_MUTED}]Removal aborted.[/{COLOR_MUTED}]\n")
 
@@ -252,7 +252,7 @@ class GoalAgentShell:
             return
 
         updated = self.db.submit_evidence(goal_id, evidence.strip())
-        console.print(f"\n[bold {COLOR_SUCCESS}][OK] Evidence logged for Goal #{goal_id}.[/{COLOR_SUCCESS}]")
+        console.print(f"\n[bold {COLOR_SUCCESS}][OK] Evidence logged for Goal #{goal_id}.[/bold {COLOR_SUCCESS}]")
         console.print(f"[{COLOR_MUTED}]Execute '6' or 'audit' to run automated evaluation.[/{COLOR_MUTED}]\n")
 
     def action_audit(self):
@@ -306,7 +306,7 @@ class GoalAgentShell:
 
         pen_id = int(pen_id_str)
         self.db.clear_penalty(pen_id)
-        console.print(f"[bold {COLOR_SUCCESS}][OK] Penalty #{pen_id} resolved and recorded in historical ledger.[/{COLOR_SUCCESS}]\n")
+        console.print(f"[bold {COLOR_SUCCESS}][OK] Penalty #{pen_id} resolved and recorded in historical ledger.[/bold {COLOR_SUCCESS}]\n")
 
     def action_history(self):
         console.print(f"\n[bold {COLOR_PRIMARY}]--- HISTORICAL AUDIT & PENALTY LEDGER ---[/bold {COLOR_PRIMARY}]")
@@ -341,13 +341,13 @@ class GoalAgentShell:
         elif choice == "single":
             pen_id_str = Prompt.ask(f"[bold {COLOR_WHITE}]Penalty ID to delete[/bold {COLOR_WHITE}]")
             if pen_id_str.isdigit() and self.db.delete_penalty(int(pen_id_str)):
-                console.print(f"[bold {COLOR_SUCCESS}][OK] Penalty record #{pen_id_str} purged.[/{COLOR_SUCCESS}]\n")
+                console.print(f"[bold {COLOR_SUCCESS}][OK] Penalty record #{pen_id_str} purged.[/bold {COLOR_SUCCESS}]\n")
             else:
                 console.print(f"[{COLOR_DANGER}][!] Record ID not found.[/{COLOR_DANGER}]\n")
         elif choice == "all":
             if Confirm.ask(f"[bold {COLOR_DANGER}]Purge ALL historical audit and penalty entries?[/bold {COLOR_DANGER}]"):
                 count = self.db.clear_penalty_history()
-                console.print(f"[bold {COLOR_SUCCESS}][OK] Purged {count} records from ledger.[/{COLOR_SUCCESS}]\n")
+                console.print(f"[bold {COLOR_SUCCESS}][OK] Purged {count} records from ledger.[/bold {COLOR_SUCCESS}]\n")
 
     def action_advice(self):
         console.print(f"\n[bold {COLOR_PRIMARY}]--- CRITERIA HARDENING & OPTIMIZATION ---[/bold {COLOR_PRIMARY}]")
