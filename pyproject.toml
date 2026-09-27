@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "goal-tracker"
+version = "1.0.0"
+description = "Autonomous AI Goal & Penalty Tracker with Ruthless Accountability"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "rich>=13.0.0",
+    "pydantic>=2.0.0"
+]
+
+[project.scripts]
+goaltrack = "goal_tracker.agent_shell:launch_agent_shell"
+sentinel = "goal_tracker.agent_shell:launch_agent_shell"
